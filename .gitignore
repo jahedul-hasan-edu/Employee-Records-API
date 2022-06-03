@@ -1,0 +1,8 @@
+.vscode
+*.db
+wwwroot
+bin
+obj
+bin/Debug/netcoreapp3.1/api.dll
+bin/Debug/netcoreapp3.1/api.pdb
+node_modules
