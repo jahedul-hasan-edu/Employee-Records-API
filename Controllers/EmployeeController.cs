@@ -82,6 +82,10 @@ namespace api.Controllers
                 }
                 catch (Exception ex)
                 {
+                    if(_coreAdminContextTransaction!=null)
+                    {
+                        _coreAdminContextTransaction.Rollback();
+                    }
                     if (ex.InnerException != null)
                     {
                         return BadRequest(ex.InnerException.Message);
