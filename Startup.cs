@@ -42,17 +42,11 @@ namespace api
             bool isMSSQL = Convert.ToBoolean(Configuration.GetSection("AppSettings")["MsSql"]);
             if(isMSSQL){
                 var connString = Configuration.GetConnectionString("DefaultConnection");
-                services.AddDbContext<coreadminContext>(options =>
-                    options.UseSqlServer(connString));
-
                 services.AddDbContext<ApplicationDbContext>(options =>
                     options.UseSqlServer(connString));
             }
             else{
                 var connString = Configuration.GetConnectionString("MySqlConnection");
-                services.AddDbContext<coreadminContext>(options =>
-                    options.UseMySQL(connString));
-
                 services.AddDbContext<ApplicationDbContext>(options =>
                     options.UseMySQL(connString));
             }
@@ -84,9 +78,8 @@ namespace api
                 o.DefaultSignInScheme = IdentityConstants.ExternalScheme;
             })
             .AddIdentityCookies(o => { });
-
-
             services.AddControllers();
+            services.AddScoped<IRUnit, RUnit>();
 
             //docs.microsoft.com/en-us/aspnet/core/security/authentication/identity-configuration?view=aspnetcore-3.1
             services.Configure<IdentityOptions>(options =>

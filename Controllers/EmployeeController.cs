@@ -1,29 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity;
 using api.Models;
-using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
 using System.Threading.Tasks;
-using System.Security.Claims;
-using System.Text;
 using Microsoft.Extensions.Configuration;
 using System;
-using System.Transactions;
-using Newtonsoft.Json;
-using System.IdentityModel.Tokens.Jwt;
-using System.Collections.Generic;
-using Microsoft.IdentityModel.Tokens;
-using System.Linq;
-using Microsoft.AspNetCore.Hosting;
-using System.IO;
-using System.Globalization;
-using System.Text.Encodings.Web;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Http.Extensions; 
-using OtpNet;
-using System.Diagnostics;
-using System.Linq.Dynamic.Core;
 using api.Data;
+using Microsoft.Data.SqlClient;
 
 namespace api.Controllers
 {
@@ -31,24 +13,16 @@ namespace api.Controllers
     [ApiController]
     public class EmployeeController : ControllerBase
     {
-        private readonly ILogger _logger;
-        private readonly IConfiguration _config;
-        private readonly coreadminContext _coreAdminContext;
-        private readonly UrlEncoder _urlEncoder;
-        private readonly IWebHostEnvironment _env;
-
+        private readonly ApplicationDbContext _dbContext;
+        private readonly IRUnit _unit;
+        private readonly ConnectionHelper _conHelper;
         public EmployeeController(
-            ILogger<EmployeeController> logger,
-            IConfiguration config,
-            coreadminContext coreAdminContext,
-            IWebHostEnvironment env,
-            UrlEncoder urlEncoder)
+            ApplicationDbContext coreAdminContext,
+            IRUnit unit)
         {
-            _logger = logger;
-            _config = config;
-            _coreAdminContext = coreAdminContext;
-            _env = env;
-            _urlEncoder = urlEncoder;
+            _dbContext = coreAdminContext;
+            _unit=unit;
+            _conHelper=new ConnectionHelper(_dbContext);
         }
 
         public IConfigurationRoot Configuration { get; set; }
@@ -56,81 +30,96 @@ namespace api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SaveOrEditEmployee(Employee objData)
         {
-            using(var _coreAdminContextTransaction = _coreAdminContext.Database.BeginTransaction())
+            #region  SaveOrEditEmployee With Entity and Repository
+            // using(var _dbContextTransaction = _dbContext.Database.BeginTransaction())
+            // {
+            //     try
+            //     {
+            //         if(_unit.isSave(objData.ID))
+            //         {
+            //             objData.ID=_unit.GetNewID();
+            //             _unit.Employee.Add(objData);
+            //         }else{
+            //             Employee data = _unit.Employee.GetFirstOrDefault(x=>x.ID==objData.ID);
+            //             if(_unit.isSafe(data))
+            //             {
+            //                 data=_unit.Employee.SetData(objData);
+            //                 _unit.Employee.Update(data);
+            //             }
+            //         }
+            //         _unit.SaveChanges();
+            //         _dbContextTransaction.Commit();
+            //         return Ok(true);
+            //     }
+            //     catch (Exception ex)
+            //     {
+            //         if(_dbContextTransaction!=null)
+            //             _dbContextTransaction.Rollback();
+            //         if (ex.InnerException != null)
+            //             return BadRequest(ex.InnerException.Message);
+            //         else
+            //             return BadRequest(ex.Message);
+            //     }
+            // }
+            #endregion
+            #region  SaveOrEditEmployee ADO.NET(Without Entity) and Repository
+            try
             {
-                try
-                {
-                    if(string.IsNullOrEmpty(objData.ID))
-                    {
-                        objData.ID=Guid.NewGuid().ToString();
-                        _coreAdminContext.Employee.Add(objData);
-                    }else{
-                        Employee data = _coreAdminContext.Employee.Where(x => x.ID == objData.ID).FirstOrDefault();
-                        if(data==null)
-                        {
-                            return BadRequest("Data Not Found!"); 
-                        }
-                        data.ID=objData.ID;
-                        data.FirstName=objData.FirstName;
-                        data.LastName=objData.LastName;
-                        data.MiddleName=objData.MiddleName;
-                        _coreAdminContext.Employee.Update(data);
-                    }
-                    _coreAdminContext.SaveChanges();
-                    _coreAdminContextTransaction.Commit();
-                    return Ok(true);
-                }
-                catch (Exception ex)
-                {
-                    if(_coreAdminContextTransaction!=null)
-                    {
-                        _coreAdminContextTransaction.Rollback();
-                    }
-                    if (ex.InnerException != null)
-                    {
-                        return BadRequest(ex.InnerException.Message);
-                    }
-                    else
-                    {
-                        return BadRequest(ex.Message);
-                    }
-                }
+                _unit.Employee.SaveOrUpdateADO(_conHelper.GetConnectionString,objData);
+                return Ok(true);
             }
+            catch (Exception ex)
+            {
+                if (ex.InnerException != null)
+                    return BadRequest(ex.InnerException.Message);
+                else
+                    return BadRequest(ex.Message);
+            }
+            #endregion
         }
         [HttpGet("DeleteEmployee")]
         [AllowAnonymous]
         public async Task<IActionResult> DeleteEmployee(string id)
         {
-            using(var _coreAdminContextTransaction = _coreAdminContext.Database.BeginTransaction())
+            #region  DeleteEmployee With Entity and Repository
+            // using(var _dbContextTransaction = _dbContext.Database.BeginTransaction())
+            // {
+            //     try
+            //     {
+            //         var data = _unit.Employee.GetFirstOrDefault(x=>x.ID==id);
+            //         if(_unit.isSafe(data))
+            //         {
+            //             _unit.Employee.Remove(data);
+            //             _unit.SaveChanges();
+            //         }
+            //         _dbContextTransaction.Commit();
+            //         return Ok(true);
+            //     }
+            //     catch (Exception ex)
+            //     {
+            //         if(_dbContextTransaction!=null)
+            //             _dbContextTransaction.Rollback();
+            //         if (ex.InnerException != null)
+            //             return BadRequest(ex.InnerException.Message);
+            //         else
+            //             return BadRequest(ex.Message);
+            //     }
+            // }
+            #endregion
+            #region  DeleteEmployee ADO.NET(Without Entity) and Repository
+            try
             {
-                try
-                {
-                    var data = _coreAdminContext.Employee.Where(x => x.ID == id).FirstOrDefault();
-                    if(data==null)
-                    {
-                        return BadRequest("Data Not Found!"); 
-                    }
-                    _coreAdminContext.Employee.Remove(data);
-                    _coreAdminContext.SaveChanges();
-                    _coreAdminContextTransaction.Commit();
-                    return Ok(true);
-                }
-                catch (Exception ex)
-                {
-                    if(_coreAdminContextTransaction!=null)
-                    {
-                        _coreAdminContextTransaction.Rollback();
-                    }
-                    if (ex.InnerException != null)
-                    {
-                        return BadRequest(ex.InnerException.Message);
-                    }
-                    else
-                    {
-                        return BadRequest(ex.Message);
-                    }
-                }
+                _unit.Employee.DeleteADO(_conHelper.GetConnectionString,id);
+                return Ok(true);
             }
+            catch (Exception ex)
+            {
+                if (ex.InnerException != null)
+                    return BadRequest(ex.InnerException.Message);
+                else
+                    return BadRequest(ex.Message);
+            }
+            #endregion
         }
         [HttpGet("GetAllEmployee")]
         [AllowAnonymous]
@@ -138,19 +127,20 @@ namespace api.Controllers
         {
             try
             {
-                var data=await _coreAdminContext.Employee.ToListAsync();
-                return Ok(new {res=data});
+                #region  GetAllEmployee With Entity and Repository
+                // var data=await _unit.Employee.GetAllAsync();
+                #endregion
+                #region  GetAllEmployee ADO.NET(Without Entity) and Repository
+                var data=_unit.Employee.GetAllADO(_conHelper.GetConnectionString);
+                #endregion
+                return Ok(data);
             }
             catch (Exception ex)
             {
                 if (ex.InnerException != null)
-                {
-                    return BadRequest(ex.InnerException.Message);
-                }
+                        return BadRequest(ex.InnerException.Message);
                 else
-                {
                     return BadRequest(ex.Message);
-                }
             }
         }
         [HttpGet("GetEmployee")]
@@ -159,23 +149,24 @@ namespace api.Controllers
         {
             try
             {
-                var data = _coreAdminContext.Employee.Where(x => x.ID == id).FirstOrDefault();
-                if(data==null)
+                #region  GetEmployee With Entity and Repository
+                // var data =_unit.Employee.GetFirstOrDefault(x=>x.ID==id);
+                #endregion
+                #region  GetEmployee ADO.NET(Without Entity) and Repository
+                Employee data=_unit.Employee.GetADO(_conHelper.GetConnectionString,id);
+                #endregion
+                if(_unit.isSafe(data))
                 {
-                    return BadRequest("Data Not Found!"); 
+                    return Ok(data);
                 }
-                return Ok(new {res=data});
+                return Ok();
             }
             catch (Exception ex)
             {
                 if (ex.InnerException != null)
-                {
-                    return BadRequest(ex.InnerException.Message);
-                }
+                        return BadRequest(ex.InnerException.Message);
                 else
-                {
                     return BadRequest(ex.Message);
-                }
             }
         }
         
