@@ -24,21 +24,13 @@ namespace api.Data{
         {
             return Guid.NewGuid().ToString().ToUpper();
         }
-        public bool isSafe(object data)
-        {
-            bool ret=true;
-            try{
-                if(data==null)
-                {
-                    throw new Exception("Object is empty!");
-                }
-            }catch(Exception exp){throw exp;}
-            return ret;
-
-        }
         public void SaveChanges()
         {
             _db.SaveChanges();
+        }
+        public void SaveChangesAsync()
+        {
+            _db.SaveChangesAsync();
         }
     }
 }

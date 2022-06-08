@@ -13,10 +13,5 @@ using Microsoft.Data.SqlClient;
 namespace api.Data{
     public interface IREmployee:IRepository<Employee>{
         Task<IEnumerable<Employee>> GetAllAsync();
-        Employee SetData(Employee data);
-        Employee SaveOrUpdateADO(string connectionString,Employee objData);
-        void DeleteADO(string connectionString,string ID);
-        IEnumerable<Employee> GetAllADO(string connectionString);
-        Employee GetADO(string connectionString,string ID);
     }
 }

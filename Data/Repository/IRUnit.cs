@@ -7,8 +7,8 @@ namespace api.Data{
         
          IREmployee Employee { get; }
         void SaveChanges();
+        void SaveChangesAsync();
         bool isSave(string data);
         string GetNewID();
-        bool isSafe(object data);
     }
 }
